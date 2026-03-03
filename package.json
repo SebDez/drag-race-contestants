@@ -1,0 +1,13 @@
+{
+  "name": "rupauls-drag-race-contestants",
+  "version": "1.0.0",
+  "description": "A JSON dataset of all contestants from RuPaul's Drag Race across the different seasons and franchises.",
+  "keywords": [
+    "rupauls",
+    "drag",
+    "race",
+    "contestants",
+    "json",
+    "dataset"
+  ]
+}
