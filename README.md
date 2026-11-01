@@ -1,6 +1,6 @@
 # 💄 RuPaul’s Drag Race Contestants – JSON Dataset
 
-This repository contains a JSON output of all contestants from RuPaul’s Drag Race across the different seasons and franchises.
+This repository contains a JSON dataset of contestants from RuPaul’s Drag Race across seasons and franchises.
 
 I originally created this file for a personal project, but I’m sharing it here in case it can be useful to others.
 
@@ -8,73 +8,106 @@ As a big fan of the show, I often found myself mixing up queens — especially r
 
 ## 📦 What’s Inside
 
-- A JSON file containing structured data about contestants
-- Cleaned and normalized fields
-- Only the relevant data needed for programmatic use
+- `contestants_extract.json` — structured contestant data
+- Cleaned / normalized fields for programmatic use
+- Root shape: `{ meta, queens }`
 
 This repository does not contain any application code — only the resulting JSON dataset.
 
+**v3.0.0** — 778 queens · 25 franchises · 98 season pages scraped.
+
+### Breaking changes in 3.0.0
+
+| Before (v2.x) | After (v3.0.0) |
+|---|---|
+| Root was a bare `Contestant[]` | Root is `{ meta, queens }` |
+| No stable id | `id` slug (unique) on every queen |
+| `miniPromoImageUrl` | `promoImageURL` (wiki page main image) |
+| `imageUrl` from queen page heuristics | `imageUrl` from the season table **Photo** column (first appearance) |
+
+### Example
+
 ```json
 {
-   {
-    "dragName": "A'Keria C. Davenport",
-    "imageUrl": "https://static.wikia.nocookie.net/logosrupaulsdragrace/images/8/80/A%27keriaChanelDavenportAS6.png",
-    "wikiUrl": "https://rupaulsdragrace.fandom.com/wiki/A'Keria_C._Davenport",
-    "seasons": [
-      {
-        "franchise": "RuPaul's Drag Race",
-        "season": "11",
-        "rawPlace": "3rd/4th",
-        "places": [
-          3,
-          4
-        ],
-        "mainPlace": 3,
-        "isWinner": false,
-        "challengeWins": 2
-      },
-      {
-        "franchise": "RuPaul's Drag Race All Stars",
-        "season": "6",
-        "rawPlace": "8th",
-        "places": [
-          8
-        ],
-        "mainPlace": 8,
-        "isWinner": false,
-        "challengeWins": 0
-      }
-    ],
-    "firstFranchise": "RuPaul's Drag Race",
-    "miniPromoImageUrl": "https://static.wikia.nocookie.net/logosrupaulsdragrace/images/6/65/AkeriaS11Promo.jpg",
-    "totalChallengeWins": 2,
-    "isWinner": false,
-    "firstFranchiseCountry": "United States"
-  }
+  "meta": {
+    "version": "3.0.0",
+    "generatedAt": "2026-11-01T00:00:00.000Z",
+    "source": "https://rupaulsdragrace.fandom.com",
+    "queensCount": 778
+  },
+  "queens": [
+    {
+      "id": "bebe-zahara-benet",
+      "dragName": "BeBe Zahara Benet",
+      "imageUrl": "https://static.wikia.nocookie.net/logosrupaulsdragrace/images/4/40/BeBeZaharaBenetS1CastMug.png",
+      "wikiUrl": "https://rupaulsdragrace.fandom.com/wiki/BeBe_Zahara_Benet",
+      "seasons": [
+        {
+          "franchise": "RuPaul's Drag Race",
+          "season": "1",
+          "rawPlace": "Winner",
+          "places": [1],
+          "mainPlace": 1,
+          "isWinner": true,
+          "challengeWins": 2
+        },
+        {
+          "franchise": "RuPaul's Drag Race All Stars",
+          "season": "3",
+          "rawPlace": "3rd/4th",
+          "places": [3, 4],
+          "mainPlace": 3,
+          "isWinner": false,
+          "challengeWins": 2
+        }
+      ],
+      "firstFranchise": "RuPaul's Drag Race",
+      "promoImageURL": "https://static.wikia.nocookie.net/logosrupaulsdragrace/images/e/ea/BeBeAS3Promo.png",
+      "totalChallengeWins": 4,
+      "isWinner": true,
+      "firstFranchiseCountry": "United States"
+    }
+  ]
 }
 ```
 
+### TypeScript DTOs
+
 ```typescript
+type ExtractFile = {
+  meta: Meta;
+  queens: Contestant[];
+};
+
+type Meta = {
+  version: string; // Dataset semver, e.g. "3.0.0"
+  generatedAt: string; // ISO day at midnight UTC, e.g. "2026-11-01T00:00:00.000Z"
+  source: string; // Wiki base URL
+  queensCount: number;
+  lastUpdate?: Record<string, unknown>; // Optional scrape run metadata
+};
+
 type Season = {
-  franchise: string; // This season franchise name
-  season: number; // This season number (for this franchise)
-  rawPlace: string; // The place raw string
-  places: number[]; // All the places (if more than one)
-  mainPlace: number; // The higher place
-  isWinner: boolean; // As the contestant won this season
-  challengeWins: number; // Number of challenges won in this season
+  franchise: string; // Franchise name for this appearance
+  season: string; // Season number as string (e.g. "1", "11")
+  rawPlace?: string; // Place as written on the wiki (may be missing)
+  places: number[]; // Parsed place numbers (empty if unknown)
+  mainPlace?: number; // Best / primary place when available
+  isWinner: boolean; // Won this season
+  challengeWins: number; // Maxi-challenge wins this season
 };
 
 type Contestant = {
-  dragName: string; // The contestant drag name
-  imageUrl?: string; // The contestant main image, if found
-  wikiUrl: string; // The wiki url
-  seasons: Season[]; // All the seasons the contestant went to
-  firstFranchise: string; // The first franchise of the first cast
-  miniPromoImageUrl?: string; // The contestant mini promo image, if found
-  totalChallengeWins: number; // Total amount of challenges won, all seasons count
-  isWinner: boolean; // Was crown at least one time
-  firstFranchiseCountry: string; //The country of the first cast
+  id: string; // Unique slug from wiki title (stable key)
+  dragName: string; // Drag name (resolved wiki title)
+  imageUrl?: string; // Cast photo from the season table Photo column
+  wikiUrl: string; // Contestant wiki page URL
+  seasons: Season[]; // All recorded season appearances
+  firstFranchise: string; // Franchise of the first mapped cast
+  promoImageURL?: string; // Main illustration of the queen's wiki page
+  totalChallengeWins: number; // Sum of challengeWins across seasons
+  isWinner: boolean; // Crowned at least once
+  firstFranchiseCountry?: string; // Country of firstFranchise when mapped
 };
 ```
 
